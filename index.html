@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>My Finance Portfolio</title>
+  <style>
+    :root{
+      --bg:#f7f7fb; --card:#ffffff; --ink:#15171a; --muted:#6b7280;
+      --brand:#3b82f6; --ok:#16a34a; --warn:#f59e0b; --danger:#ef4444;
+      --chip:#eef2ff; --border:#e5e7eb; --shadow:0 8px 24px rgba(16,24,40,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+    .wrap{max-width:980px;margin:0 auto;padding:16px 14px 120px}
+    header{position:sticky;top:0;background:linear-gradient(#f7f7fb,#f7f7fbcc 60%,#f7f7fb00);backdrop-filter:saturate(1.2) blur(6px);z-index:10;padding:10px 14px 6px;margin:0 -14px;border-bottom:1px solid var(--border)}
+    h1{font-size:20px;margin:6px 0 2px;font-weight:750}
+    .muted{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+    .card h2{font-size:16px;margin:2px 0 10px}
+    .grid{display:grid;gap:10px}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    @media (max-width:720px){.grid.cols-2{grid-template-columns:1fr}}
+    input,select,button,textarea{
+      font:inherit;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff;color:var(--ink);outline:none;width:100%;
+    }
+    input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+    button{background:var(--brand);color:#fff;border-color:transparent;cursor:pointer}
+    button.ghost{background:#fff;color:var(--brand);border-color:var(--brand)}
+    .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chip);color:#3730a3;border-radius:999px;padding:6px 10px;font-size:12px}
+    .list{display:grid;gap:10px}
+    .item{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff}
+    .item small{color:var(--muted)}
+    .kpi{display:flex;gap:12px;flex-wrap:wrap}
+    .kpi .box{flex:1;min-width:160px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
+    .kpi .val{font-weight:800;font-size:20px}
+    .right{margin-left:auto}
+    .badge{font-size:12px;border-radius:8px;padding:4px 8px;background:#f1f5f9;color:#0f172a;border:1px solid var(--border)}
+    footer.nav{
+      position:fixed;inset:auto 0 0 0;background:#fff;border-top:1px solid var(--border);display:flex;gap:8px;padding:10px 12px;z-index:20
+    }
+    .nav button{flex:1;border-radius:12px}
+    .hint{font-size:12px;color:var(--muted)}
+    .danger{color:var(--danger)}
+    /* address extras */
+    .item .actions{display:flex;gap:6px;align-items:center}
+    .copy{border:1px solid var(--border);background:#fff;color:var(--ink);padding:6px 10px;border-radius:10px;cursor:pointer}
+    .addr-meta{display:flex;gap:8px;align-items:center}
+    .addr-meta small{color:var(--muted)}
+    .addr-tag{background:#eef2ff;border:1px solid #e5e7eb;border-radius:8px;padding:2px 6px;font-size:11px}
+    /* retirement log/status */
+    .log-note{color:var(--muted);font-size:12px}
+    .ok{background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
+    .nok{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="row" style="align-items:center;justify-content:space-between">
+      <div>
+        <h1>พอร์ตการเงินของฉัน</h1>
+        <div class="muted">ดูรวมคริปโต • ทอง • กระจายหลายบัญชี — Mobile-first UI</div>
+      </div>
+      <div class="chip">฿ <span id="chipCurrency">THB</span></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- KPIs -->
+    <div class="kpi">
+      <div class="box">
+        <div class="muted">มูลค่ารวมพอร์ต</div>
+        <div class="val" id="kpiTotal">–</div>
+        <div class="hint" id="kpiChange"></div>
+      </div>
+      <div class="box">
+        <div class="muted">เงินสด/Stable</div>
+        <div class="val" id="kpiCash">–</div>
+        <div class="hint">รวมทุกที่เก็บ</div>
+      </div>
+      <div class="box">
+        <div class="muted">คริปโต+ทอง</div>
+        <div class="val" id="kpiRisk">–</div>
+        <div class="hint">มูลค่ารวมสินทรัพย์ผันผวน</div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card">
+      <h2>Settings</h2>
+      <div class="grid cols-2">
+        <div>
+          <label class="muted">สกุลเงินแสดงผล</label>
+          <select id="currency">
+            <option value="THB" selected>THB (บาท)</option>
+            <option value="USD">USD</option>
+          </select>
+          <div class="hint">อัตราแลกเปลี่ยนอัปเดตอัตโนมัติ</div>
+        </div>
+        <div>
+          <label class="muted">Gold API Key (ไม่บังคับ)</label>
+          <input id="goldKey" placeholder="หรือใช้ proxy endpoint ในโค้ด" />
+          <div class="row" style="margin-top:8px">
+            <button id="saveSettings">Save</button>
+            <button class="ghost" id="clearAll">ล้างข้อมูลพอร์ต</button>
+          </div>
+          <div class="hint">*ห้ามฝังคีย์ลับจริงในไฟล์นี้ — ควรใช้ proxy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Manage Accounts + Wallet Addresses -->
+    <div class="card">
+      <h2>เพิ่ม/แก้ไขบัญชี (ที่เก็บพอร์ต) + Wallet Addresses</h2>
+      <div class="grid cols-2">
+        <div>
+          <label class="muted">ชื่อบัญชี</label>
+          <input id="accName" placeholder="เช่น Exchange-A, Wallet-B, กองทุน, ธนาคาร" />
+        </div>
+        <div>
+          <label class="muted">หมายเหตุ</label>
+          <input id="accNote" placeholder="คำอธิบาย (ไม่บังคับ)" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="addAccount">เพิ่มบัญชี</button>
+      </div>
+      <div class="list" id="accounts" style="margin-top:12px"></div>
+
+      <!-- Address manager -->
+      <div id="addressPanel" class="card" style="margin-top:12px; display:none; border-style:dashed">
+        <h2 style="margin-bottom:6px">ที่อยู่กระเป๋าของ: <span id="addrAccName">—</span></h2>
+        <div class="grid cols-2">
+          <div>
+            <label class="muted">ประเภท</label>
+            <select id="addrType">
+              <option value="btc" selected>BTC (Bitcoin)</option>
+              <option value="evm">DeFi (EVM)</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted">เครือข่าย (สำหรับ DeFi)</label>
+            <select id="addrChain">
+              <option value="ethereum" selected>Ethereum</option>
+              <option value="bsc">BNB Smart Chain</option>
+              <option value="polygon">Polygon</option>
+              <option value="arbitrum">Arbitrum</option>
+              <option value="optimism">Optimism</option>
+              <option value="base">Base</option>
+            </select>
+            <div class="hint">ถ้าเลือก BTC ระบบจะไม่ใช้ค่านี้</div>
+          </div>
+        </div>
+        <div class="grid cols-2" style="margin-top:8px">
+          <div>
+            <label class="muted">Label</label>
+            <input id="addrLabel" placeholder="เช่น Main, Cold, Trading" />
+          </div>
+          <div>
+            <label class="muted">Address</label>
+            <input id="addrValue" placeholder="ใส่ที่อยู่กระเป๋า (BTC หรือ 0x…)" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="btnAddAddress">เพิ่มที่อยู่</button>
+          <button class="ghost" id="btnCloseAddress">ปิด</button>
+        </div>
+        <div class="list" id="addrList" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Add Asset -->
+    <div class="card">
+      <h2>เพิ่มสินทรัพย์ในบัญชี</h2>
+      <div class="grid cols-2">
+        <div>
+          <label class="muted">เลือกบัญชี</label>
+          <select id="assetAccount"></select>
+        </div>
+        <div>
+          <label class="muted">ประเภทสินทรัพย์</label>
+          <select id="assetType">
+            <option value="crypto" selected>Crypto</option>
+            <option value="gold">Gold</option>
+            <option value="cash">Cash / Stable</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid cols-2" style="margin-top:8px">
+        <div>
+          <label class="muted">สัญลักษณ์/รายละเอียด</label>
+          <input id="assetSymbol" placeholder="เช่น bitcoin, eth, xrp หรือ gold" />
+          <div class="hint">Crypto ใช้ CoinGecko id (bitcoin, ethereum ฯลฯ)</div>
+        </div>
+        <div>
+          <label class="muted">จำนวน</label>
+          <input id="assetAmount" type="number" min="0" step="any" placeholder="เช่น 0.5 / 10 / 10000" />
+          <div class="hint" id="unitHint">Crypto=จำนวนเหรียญ | Gold=กรัม | Cash=ยอดเงิน</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="addAsset">เพิ่มสินทรัพย์</button>
+      </div>
+      <div class="list" id="assets" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card">
+      <h2>สรุปพอร์ต</h2>
+      <div class="list" id="summary"></div>
+      <div class="hint" style="margin-top:8px">*ราคาตลาดอ้างอิงจากผู้ให้บริการ API ภายนอก</div>
+    </div>
+
+    <!-- Retirement: BTC Goal -->
+    <div class="card">
+      <h2>พอร์ตเกษียณด้วย BTC</h2>
+      <div class="grid cols-2">
+        <div>
+          <label class="muted">วันเกิด (คำนวณถึงอายุ 60)</label>
+          <input id="retDob" type="date" placeholder="YYYY-MM-DD" />
+          <div class="hint">ระบบจะนับเวลาที่เหลือจนถึงอายุ 60</div>
+        </div>
+        <div>
+          <label class="muted">เป้าหมายสะสม BTC รวม (นับเฉพาะ Bitcoin)</label>
+          <input id="retTarget" type="number" min="0" step="any" placeholder="เช่น 3.0" />
+          <div class="row" style="margin-top:8px">
+            <button id="retSave">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi" style="margin-top:10px">
+        <div class="box">
+          <div class="muted">อายุปัจจุบัน</div>
+          <div class="val" id="retAge">–</div>
+          <div class="hint" id="retUntil">–</div>
+        </div>
+        <div class="box">
+          <div class="muted">ถือ BTC ตอนนี้</div>
+          <div class="val" id="retHave">–</div>
+          <div class="hint">รวบรวมจากสินทรัพย์ (bitcoin) ในแอป</div>
+        </div>
+        <div class="box">
+          <div class="muted">ยังขาดอีก</div>
+          <div class="val" id="retNeed">–</div>
+          <div class="hint">BTC เพื่อถึงเป้าหมาย</div>
+        </div>
+        <div class="box">
+          <div class="muted">ตอนนี้เก็บอยู่</div>
+          <div class="val" id="retRateBtc">–</div>
+          <div class="hint" id="retRateFiat">≈ –/เดือน</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <span class="badge" id="retStatus">—</span>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
+
+      <h3 style="margin:0 0 6px;font-size:15px">บันทึกการออม BTC (ใช้คำนวณอัตรา/เดือน)</h3>
+      <div class="grid cols-2">
+        <div>
+          <label class="muted">วันที่</label>
+          <input id="logDate" type="date" />
+        </div>
+        <div>
+          <label class="muted">จำนวน BTC (+)</label>
+          <input id="logAmt" type="number" min="0" step="any" placeholder="เช่น 0.01" />
+        </div>
+      </div>
+      <div class="grid cols-2" style="margin-top:8px">
+        <div>
+          <label class="muted">หมายเหตุ (ไม่บังคับ)</label>
+          <input id="logNote" placeholder="เช่น DCA, โบนัส, ย้ายจากกระเป๋า" />
+        </div>
+        <div>
+          <label class="muted">คำนวณเฉลี่ยจากช่วง</label>
+          <select id="logWindow">
+            <option value="3" selected>3 เดือนล่าสุด</option>
+            <option value="6">6 เดือนล่าสุด</option>
+            <option value="12">12 เดือนล่าสุด</option>
+            <option value="0">ทั้งหมด</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="logAdd">เพิ่มบันทึก</button>
+        <button class="ghost" id="logClear">ล้างทั้งหมด</button>
+      </div>
+      <div class="list" id="logList" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <footer class="nav">
+    <button id="btnRefresh">รีเฟรชราคา</button>
+    <button class="ghost" id="btnExport">Export JSON</button>
+    <button class="ghost" id="btnImport">Import JSON</button>
+  </footer>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const fmt = (v,c) => {
+    const cur = (c||state.settings.currency||'THB');
+    try { return new Intl.NumberFormat(cur==='THB'?'th-TH':'en-US', { style:'currency', currency:cur }).format(v); }
+    catch(e){ return (cur==='THB'?'฿':'$') + (v||0).toFixed(2); }
+  };
+
+  // --------- Storage schema ----------
+  const store = {
+    load(){
+      try{
+        const d = JSON.parse(localStorage.getItem('pf-data')) || {
+          settings:{currency:'THB',goldKey:'', retire:{dob:'', targetBTC:0}},
+          accounts:[], assets:[], retireLog:[]
+        };
+        d.settings = { currency:'THB', goldKey:'', retire:{dob:'', targetBTC:0}, ...(d.settings||{}) };
+        d.settings.retire = { dob:'', targetBTC:0, ...(d.settings.retire||{}) };
+        d.accounts = (d.accounts||[]).map(a => ({ addresses:[], ...a }));
+        d.retireLog = Array.isArray(d.retireLog)? d.retireLog : [];
+        return d;
+      }catch(e){
+        return {settings:{currency:'THB',goldKey:'', retire:{dob:'', targetBTC:0}}, accounts:[], assets:[], retireLog:[]};
+      }
+    },
+    save(){ localStorage.setItem('pf-data', JSON.stringify(state)); },
+    reset(){ localStorage.removeItem('pf-data'); location.reload(); }
+  };
+
+  let state = store.load();
+
+  // --------- Elements ----------
+  const els = {
+    currency: $('#currency'),
+    goldKey: $('#goldKey'),
+    saveSettings: $('#saveSettings'),
+    clearAll: $('#clearAll'),
+    chipCurrency: $('#chipCurrency'),
+
+    accName: $('#accName'),
+    accNote: $('#accNote'),
+    addAccount: $('#addAccount'),
+    accounts: $('#accounts'),
+
+    addressPanel: $('#addressPanel'),
+    addrAccName: $('#addrAccName'),
+    addrType: $('#addrType'),
+    addrChain: $('#addrChain'),
+    addrLabel: $('#addrLabel'),
+    addrValue: $('#addrValue'),
+    btnAddAddress: $('#btnAddAddress'),
+    btnCloseAddress: $('#btnCloseAddress'),
+    addrList: $('#addrList'),
+
+    assetAccount: $('#assetAccount'),
+    assetType: $('#assetType'),
+    assetSymbol: $('#assetSymbol'),
+    assetAmount: $('#assetAmount'),
+    addAsset: $('#addAsset'),
+    assets: $('#assets'),
+    unitHint: $('#unitHint'),
+
+    summary: $('#summary'),
+    kpiTotal: $('#kpiTotal'),
+    kpiCash: $('#kpiCash'),
+    kpiRisk: $('#kpiRisk'),
+    kpiChange: $('#kpiChange'),
+
+    // retirement
+    retDob: $('#retDob'),
+    retTarget: $('#retTarget'),
+    retSave: $('#retSave'),
+    retAge: $('#retAge'),
+    retUntil: $('#retUntil'),
+    retHave: $('#retHave'),
+    retNeed: $('#retNeed'),
+    retRateBtc: $('#retRateBtc'),
+    retRateFiat: $('#retRateFiat'),
+    retStatus: $('#retStatus'),
+    logDate: $('#logDate'),
+    logAmt: $('#logAmt'),
+    logNote: $('#logNote'),
+    logWindow: $('#logWindow'),
+    logAdd: $('#logAdd'),
+    logClear: $('#logClear'),
+    logList: $('#logList'),
+
+    btnRefresh: $('#btnRefresh'),
+    btnExport: $('#btnExport'),
+    btnImport: $('#btnImport'),
+  };
+
+  // price caches
+  let lastFxUSDToDisplay = 1; // USD -> (THB/USB) chosen
+  let lastCryptoUSD = {};     // e.g. { bitcoin: 65000, ... }
+  let addressEditingAccountId = null;
+
+  // --------- Init forms ----------
+  els.currency.value = state.settings.currency || 'THB';
+  els.goldKey.value = state.settings.goldKey || '';
+  els.chipCurrency.textContent = els.currency.value;
+
+  els.retDob.value = state.settings.retire.dob || '';
+  els.retTarget.value = state.settings.retire.targetBTC ?? 0;
+  (function setToday(){
+    const t = new Date();
+    const mm = String(t.getMonth()+1).padStart(2,'0');
+    const dd = String(t.getDate()).padStart(2,'0');
+    els.logDate.value = `${t.getFullYear()}-${mm}-${dd}`;
+  })();
+
+  // --------- Settings handlers ----------
+  els.saveSettings.onclick = () => {
+    state.settings.currency = els.currency.value;
+    state.settings.goldKey = els.goldKey.value.trim();
+    store.save();
+    els.chipCurrency.textContent = state.settings.currency;
+    refreshAll();
+  };
+  els.clearAll.onclick = () => {
+    if(confirm('ล้างข้อมูลทั้งหมดในเครื่องนี้?')) store.reset();
+  };
+
+  // --------- Account + Address ----------
+  els.addAccount.onclick = () => {
+    const name = els.accName.value.trim();
+    if(!name) return alert('ใส่ชื่อบัญชีก่อน');
+    state.accounts.push({ id: crypto.randomUUID(), name, note: els.accNote.value.trim(), addresses:[] });
+    els.accName.value=''; els.accNote.value='';
+    store.save(); renderAccounts(); renderAccountOptions();
+  };
+
+  function renderAccounts(){
+    els.accounts.innerHTML = '';
+    state.accounts.forEach(acc=>{
+      const div = document.createElement('div');
+      div.className='item';
+      const left = document.createElement('div');
+
+      const countAddr = (acc.addresses||[]).length;
+      left.innerHTML = `
+        <strong>${acc.name}</strong>
+        <div class="muted">${acc.note||''}</div>
+        <div class="addr-meta" style="margin-top:6px">
+          <span class="addr-tag">addr: ${countAddr}</span>
+        </div>
+      `;
+
+      const right = document.createElement('div'); right.className='actions';
+      const manage = document.createElement('button'); manage.className='ghost'; manage.textContent='จัดการที่อยู่';
+      manage.onclick = ()=> openAddressPanel(acc.id);
+      const del = document.createElement('button'); del.className='ghost'; del.textContent='ลบ';
+      del.onclick = ()=>{
+        if(confirm('ลบบัญชีนี้และสินทรัพย์ทั้งหมดในบัญชี?')){
+          state.assets = state.assets.filter(a=>a.accountId!==acc.id);
+          state.accounts = state.accounts.filter(x=>x.id!==acc.id);
+          store.save(); boot();
+        }
+      };
+      right.appendChild(manage);
+      right.appendChild(del);
+
+      div.appendChild(left); div.appendChild(right);
+      els.accounts.appendChild(div);
+    });
+  }
+  function renderAccountOptions(){
+    els.assetAccount.innerHTML = '';
+    state.accounts.forEach(acc=>{
+      const opt = document.createElement('option'); opt.value=acc.id; opt.textContent=acc.name;
+      els.assetAccount.appendChild(opt);
+    });
+  }
+
+  function openAddressPanel(accId){
+    addressEditingAccountId = accId;
+    const acc = state.accounts.find(a=>a.id===accId);
+    els.addrAccName.textContent = acc?.name || '—';
+    els.addrType.value = 'btc';
+    els.addrChain.value = 'ethereum';
+    els.addrLabel.value = '';
+    els.addrValue.value = '';
+    renderAddressList();
+    els.addressPanel.style.display = 'block';
+  }
+  els.btnCloseAddress.onclick = () => {
+    addressEditingAccountId = null;
+    els.addressPanel.style.display = 'none';
+  };
+  els.btnAddAddress.onclick = () => {
+    const acc = state.accounts.find(a=>a.id===addressEditingAccountId);
+    if(!acc) return alert('ไม่พบบัญชี');
+    const type = els.addrType.value; // 'btc' | 'evm'
+    const chain = (type==='btc') ? null : els.addrChain.value;
+    const label = els.addrLabel.value.trim() || (type==='btc'?'BTC':'EVM');
+    const address = els.addrValue.value.trim();
+    if(!address) return alert('กรอก address ก่อน');
+    if(type==='btc' && address.length < 26) return alert('BTC address ดูสั้นผิดปกติ');
+    if(type==='evm' && !/^0x[a-fA-F0-9]{40}$/.test(address)) return alert('EVM address ไม่ถูกต้อง');
+
+    acc.addresses = acc.addresses || [];
+    acc.addresses.push({ id: crypto.randomUUID(), type, chain, label, address });
+    els.addrValue.value='';
+    store.save();
+    renderAddressList();
+    renderAccounts();
+  };
+  function renderAddressList(){
+    const acc = state.accounts.find(a=>a.id===addressEditingAccountId);
+    els.addrList.innerHTML = '';
+    (acc?.addresses||[]).forEach(ad=>{
+      const div = document.createElement('div'); div.className='item';
+      // explorer link
+      let link = '#';
+      if(ad.type==='btc'){
+        link = `https://mempool.space/address/${encodeURIComponent(ad.address)}`;
+      }else{
+        const base = {
+          ethereum: 'https://etherscan.io/address/',
+          bsc: 'https://bscscan.com/address/',
+          polygon: 'https://polygonscan.com/address/',
+          arbitrum: 'https://arbiscan.io/address/',
+          optimism: 'https://optimistic.etherscan.io/address/',
+          base: 'https://basescan.org/address/'
+        }[ad.chain || 'ethereum'] || 'https://etherscan.io/address/';
+        link = base + encodeURIComponent(ad.address);
+      }
+
+      const left = document.createElement('div');
+      left.innerHTML = `
+        <strong>${ad.label||''}</strong>
+        <div class="muted">${ad.type.toUpperCase()}${ad.type==='evm' && ad.chain? ' · ' + ad.chain : ''}</div>
+        <div class="muted" style="word-break:break-all">${ad.address}</div>
+      `;
+
+      const right = document.createElement('div'); right.className='actions';
+      const a = document.createElement('a'); a.href=link; a.target='_blank'; a.rel='noopener';
+      a.className='ghost'; a.textContent='ดูบน Explorer';
+
+      const copy = document.createElement('button'); copy.className='copy'; copy.textContent='คัดลอก';
+      copy.onclick = async ()=>{ try{ await navigator.clipboard.writeText(ad.address); copy.textContent='คัดลอกแล้ว'; setTimeout(()=>copy.textContent='คัดลอก',1000);}catch(e){ alert('คัดลอกไม่สำเร็จ'); } };
+
+      const del = document.createElement('button'); del.className='ghost'; del.textContent='ลบ';
+      del.onclick = ()=>{
+        if(confirm('ลบ address นี้?')){
+          acc.addresses = acc.addresses.filter(x=>x.id!==ad.id);
+          store.save(); renderAddressList(); renderAccounts();
+        }
+      };
+
+      right.appendChild(a); right.appendChild(copy); right.appendChild(del);
+      div.appendChild(left); div.appendChild(right);
+      els.addrList.appendChild(div);
+    });
+  }
+
+  // --------- Assets ----------
+  els.assetType.onchange = () => {
+    const t = els.assetType.value;
+    els.unitHint.textContent = t==='crypto' ? 'Crypto=จำนวนเหรียญ | Gold=กรัม | Cash=ยอดเงิน'
+      : t==='gold' ? 'ใส่จำนวนเป็น “กรัม” (ระบบจะแปลงเป็นออนซ์เพื่อหาราคา)'
+      : 'ยอดเงินตามสกุลแสดงผล';
+  };
+  els.addAsset.onclick = () => {
+    if(!state.accounts.length) return alert('กรุณาสร้างบัญชีก่อน');
+    const acc = els.assetAccount.value;
+    const type = els.assetType.value;
+    const symbol = els.assetSymbol.value.trim().toLowerCase() || (type==='gold'?'gold':'');
+    const amount = parseFloat(els.assetAmount.value);
+    if(!acc || !type || !symbol || !(amount>=0)) return alert('กรอกข้อมูลให้ครบ');
+    state.assets.push({ id: crypto.randomUUID(), accountId: acc, type, symbol, amount });
+    els.assetAmount.value=''; els.assetSymbol.value='';
+    store.save(); renderAssets(); refreshAll();
+  };
+  function renderAssets(){
+    els.assets.innerHTML = '';
+    state.assets.forEach(a=>{
+      const acc = state.accounts.find(x=>x.id===a.accountId);
+      const div = document.createElement('div'); div.className='item';
+      const left = document.createElement('div');
+      left.innerHTML = `<strong>${a.type.toUpperCase()}</strong> <small class="badge">${acc?acc.name:'?'}</small><div class="muted">${a.symbol} • ${a.amount}</div>`;
+      const right = document.createElement('div');
+      const del = document.createElement('button'); del.className='ghost'; del.textContent='ลบ';
+      del.onclick = ()=>{ state.assets = state.assets.filter(x=>x.id!==a.id); store.save(); renderAssets(); refreshAll(); };
+      right.appendChild(del);
+      div.appendChild(left); div.appendChild(right);
+      els.assets.appendChild(div);
+    });
+  }
+
+  // --------- Pricing engines ----------
+  async function getFxUSD(target){
+    if(target==='USD') return 1;
+    const url = `https://api.frankfurter.dev/latest?base=USD&symbols=${encodeURIComponent(target)}`;
+    const r = await fetch(url); const j = await r.json();
+    return j.rates?.[target] || 1;
+  }
+  async function getCryptoPricesUSD(ids){
+    if(!ids.length) return {};
+    const qs = new URLSearchParams({ ids: ids.join(','), vs_currencies: 'usd' });
+    const url = `https://api.coingecko.com/api/v3/simple/price?${qs.toString()}`;
+    const r = await fetch(url); if(!r.ok) throw new Error('ดึงราคาคริปโตไม่สำเร็จ');
+    const j = await r.json();
+    const out = {}; for(const k in j) out[k]=j[k].usd; return out;
+  }
+  async function getGoldPriceUSD(){
+    // แนะนำใช้ proxy ของคุณเองเพื่อไม่ให้คีย์รั่ว
+    const key = (state.settings.goldKey||'').trim();
+    if(!key){
+      // ตัวอย่าง: ถ้าคุณมี proxy endpoint ให้เปลี่ยน URL ตรงนี้ เช่น:
+      // const r = await fetch('https://your-proxy.example/xau');
+      // const j = await r.json(); return j.xau_usd_per_oz ?? null;
+      return null; // ไม่ดึงถ้าไม่ตั้งค่า
+    }
+    const url = `https://metals-api.com/api/latest?access_key=${key}&base=USD&symbols=XAU`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('ดึงราคาทองไม่สำเร็จ');
+    const j = await r.json();
+    let perOzUSD;
+    if(j.rates && j.rates.XAU){ perOzUSD = 1 / j.rates.XAU; }
+    else if(j.data && j.data.rates && j.data.rates.XAU){ perOzUSD = 1 / j.data.rates.XAU; }
+    else throw new Error('รูปแบบข้อมูลทองไม่รู้จัก');
+    return perOzUSD;
+  }
+
+  // --------- Summary / KPIs / Refresh ----------
+  async function refreshAll(){
+    try{
+      const cur = state.settings.currency || 'THB';
+      const fx = await getFxUSD(cur); lastFxUSDToDisplay = fx;
+
+      const cryptoIdsSet = new Set(state.assets.filter(a=>a.type==='crypto').map(a=>a.symbol));
+      cryptoIdsSet.add('bitcoin'); // ต้องมีเสมอเพื่อใช้ใน retirement (ตีมูลค่า/เดือน)
+      const cryptoUSD = await getCryptoPricesUSD([...cryptoIdsSet]);
+      lastCryptoUSD = cryptoUSD;
+
+      const goldUSDperOz = await getGoldPriceUSD(); // อาจเป็น null
+
+      let total=0, totalCash=0, totalRisk=0;
+      const rows = [];
+
+      for(const a of state.assets){
+        let usd = 0, pxNote='';
+        if(a.type==='cash'){
+          usd = (cur==='USD') ? a.amount : (a.amount / fx); // cash ป้อนตามสกุลแสดงผล
+          totalCash += usd * fx;
+        }
+        else if(a.type==='crypto'){
+          const p = cryptoUSD[a.symbol];
+          if(p){ usd = a.amount * p; pxNote = p; totalRisk += usd*fx; }
+        }
+        else if(a.type==='gold'){
+          const oz = a.amount / 31.1034768; // กรัม -> ออนซ์
+          if(goldUSDperOz){ usd = oz * goldUSDperOz; pxNote = goldUSDperOz; totalRisk += usd*fx; }
+        }
+        total += usd*fx;
+        const priceStr = pxNote ? ` @ ${fmt(pxNote*fx)}/${a.type==='crypto'?'unit':'oz'}` : '';
+        rows.push({
+          label: `${a.type.toUpperCase()} • ${a.symbol} • ${a.amount}`,
+          valueStr: fmt(usd*fx),
+          note: priceStr
+        });
+      }
+
+      els.summary.innerHTML = '';
+      rows.forEach(r=>{
+        const div = document.createElement('div'); div.className='item';
+        div.innerHTML = `<div><strong>${r.label}</strong><div class="muted">${r.note||''}</div></div><div>${r.valueStr}</div>`;
+        els.summary.appendChild(div);
+      });
+
+      els.kpiTotal.textContent = fmt(total);
+      els.kpiCash.textContent  = fmt(totalCash);
+      els.kpiRisk.textContent  = fmt(totalRisk);
+      els.kpiChange.textContent = '';
+
+      renderAccounts(); renderAccountOptions(); renderAssets();
+      els.chipCurrency.textContent = cur;
+
+      // retirement update
+      updateRetirement();
+    }catch(e){
+      console.error(e);
+      alert('รีเฟรชราคาไม่สำเร็จ: '+e.message);
+    }
+  }
+
+  // --------- Retirement ----------
+  function monthsBetween(a,b){
+    const y = b.getFullYear() - a.getFullYear();
+    const m = b.getMonth() - a.getMonth();
+    const d = b.getDate() - a.getDate();
+    let mm = y*12 + m - (d<0 ? 1 : 0);
+    return mm < 0 ? 0 : mm;
+  }
+  function renderLog(){
+    els.logList.innerHTML = '';
+    const rows = [...state.retireLog].sort((a,b)=> (a.date<b.date?1:-1));
+    rows.forEach(r=>{
+      const div = document.createElement('div'); div.className='item';
+      const left = document.createElement('div');
+      left.innerHTML = `<strong>+${r.amt} BTC</strong><div class="log-note">${r.date}${r.note? ' • '+r.note : ''}</div>`;
+      const right = document.createElement('div'); right.className='actions';
+      const del = document.createElement('button'); del.className='ghost'; del.textContent='ลบ';
+      del.onclick = () => {
+        state.retireLog = state.retireLog.filter(x=>x.id!==r.id);
+        store.save(); renderLog(); updateRetirement();
+      };
+      right.appendChild(del);
+      div.appendChild(left); div.appendChild(right);
+      els.logList.appendChild(div);
+    });
+  }
+  function updateRetirement(){
+    const dobStr = state.settings.retire.dob || '';
+    let ageYears = '–', monthsLeftText='กรอกวันเกิดเพื่อคำนวณ', leftMonths=null;
+    if(dobStr){
+      const dob = new Date(dobStr+'T00:00:00');
+      if(!isNaN(dob.getTime())){
+        const now = new Date();
+        ageYears = Math.floor((now - dob) / (365.2425*24*3600*1000));
+        const sixty = new Date(dob); sixty.setFullYear(dob.getFullYear()+60);
+        leftMonths = (now<sixty) ? monthsBetween(now, sixty) : 0;
+        if(now < sixty){
+          monthsLeftText = `เหลืออีก ~ ${Math.floor(leftMonths/12)} ปี ${leftMonths%12} เดือน ถึงอายุ 60`;
+        }else monthsLeftText = `ครบอายุ 60 แล้ว`;
+      }
+    }
+    els.retAge.textContent = (ageYears==='–') ? '–' : `${ageYears} ปี`;
+    els.retUntil.textContent = monthsLeftText;
+
+    // ถือ BTC ตอนนี้ (นับเฉพาะ bitcoin)
+    let haveBTC = 0;
+    state.assets.forEach(a=>{
+      if(a.type==='crypto' && (a.symbol||'').toLowerCase()==='bitcoin'){
+        haveBTC += a.amount||0;
+      }
+    });
+    els.retHave.textContent = `${haveBTC.toFixed(8).replace(/0+$/,'').replace(/\.$/,'')} BTC`;
+
+    const target = state.settings.retire.targetBTC || 0;
+    const needBTC = Math.max(0, target - haveBTC);
+    els.retNeed.textContent = `${needBTC.toFixed(8).replace(/0+$/,'').replace(/\.$/,'')} BTC`;
+
+    // อัตราการออมจริงจาก log
+    const win = parseInt(els.logWindow?.value || '3',10);
+    const now = new Date();
+    let logs = [...state.retireLog];
+    if(win>0){
+      const back = new Date(now); back.setMonth(now.getMonth()-win);
+      logs = logs.filter(x => new Date(x.date+'T00:00:00') >= back);
+    }
+    let sum = 0; logs.forEach(x => sum += (x.amt||0));
+    let monthsSpan;
+    if(win>0){
+      monthsSpan = Math.max(1, win);
+    }else{
+      if(logs.length){
+        const minD = logs.reduce((m,x)=> (x.date<m? x.date : m), logs[0].date);
+        monthsSpan = Math.max(1, monthsBetween(new Date(minD+'T00:00:00'), now) || 1);
+      }else monthsSpan = 1;
+    }
+    const rateBtcPerMonth = sum / monthsSpan;
+    els.retRateBtc.textContent = `${(isFinite(rateBtcPerMonth)?rateBtcPerMonth:0).toFixed(6).replace(/\.?0+$/,'')} BTC/เดือน`;
+
+    const btcUSD = lastCryptoUSD?.bitcoin || null;
+    if(btcUSD){
+      const fiatPerMonth = rateBtcPerMonth * btcUSD * lastFxUSDToDisplay;
+      els.retRateFiat.textContent = `≈ ${fmt(fiatPerMonth)}/เดือน`;
+    }else els.retRateFiat.textContent = '≈ –/เดือน';
+
+    // ประเมิน “ทัน/ไม่ทัน”
+    let statusText = '—', cls = '';
+    if(leftMonths===null){
+      statusText = 'กรอกวันเกิดเพื่อประเมิน';
+      cls = '';
+    }else if(leftMonths===0){
+      statusText = needBTC<=0 ? 'ถึงเป้าหมายแล้ว' : 'ไม่ถึงเป้าหมาย (เลยอายุ 60)';
+      cls = needBTC<=0 ? 'ok' : 'nok';
+    }else{
+      if(rateBtcPerMonth<=0){
+        statusText = needBTC<=0 ? 'ถึงเป้าหมายแล้ว' : 'ยังไม่ออม (อัตรา 0)';
+        cls = needBTC<=0 ? 'ok' : 'nok';
+      }else{
+        const monthsNeeded = needBTC / rateBtcPerMonth;
+        if(needBTC<=0){
+          statusText = 'ถึงเป้าหมายแล้ว'; cls='ok';
+        }else if(monthsNeeded <= leftMonths){
+          const reach = new Date(now); reach.setMonth(reach.getMonth() + Math.ceil(monthsNeeded));
+          statusText = `มีแนวโน้ม "ทัน" (~${Math.ceil(monthsNeeded)} เดือน, ถึงราวๆ ${reach.getFullYear()}-${String(reach.getMonth()+1).padStart(2,'0')})`;
+          cls = 'ok';
+        }else{
+          const needRate = needBTC / leftMonths;
+          const more = Math.max(0, needRate - rateBtcPerMonth);
+          statusText = `แนวโน้ม "ไม่ทัน" (ต้องเฉลี่ย ${needRate.toFixed(6).replace(/\.?0+$/,'')} BTC/เดือน, มากกว่าปัจจุบันอีก ~${more.toFixed(6).replace(/\.?0+$/,'')})`;
+          cls = 'nok';
+        }
+      }
+    }
+    els.retStatus.textContent = statusText;
+    els.retStatus.className = `badge ${cls}`;
+  }
+
+  // --------- Retirement handlers ----------
+  els.retSave.onclick = () => {
+    state.settings.retire.dob = els.retDob.value;
+    state.settings.retire.targetBTC = parseFloat(els.retTarget.value || '0') || 0;
+    store.save();
+    updateRetirement();
+  };
+  els.logAdd.onclick = () => {
+    const dt = els.logDate.value;
+    const amt = parseFloat(els.logAmt.value || '0');
+    if(!dt || !(amt>0)) return alert('กรอกวันที่และจำนวน BTC ให้ถูกต้อง');
+    state.retireLog.push({ id: crypto.randomUUID(), date: dt, amt, note: (els.logNote.value||'').trim() });
+    els.logAmt.value=''; els.logNote.value='';
+    store.save();
+    renderLog(); updateRetirement();
+  };
+  els.logClear.onclick = () => {
+    if(!state.retireLog.length) return;
+    if(confirm('ลบบันทึกการออม BTC ทั้งหมด?')){ state.retireLog = []; store.save(); renderLog(); updateRetirement(); }
+  };
+  els.logWindow.onchange = () => updateRetirement();
+
+  // --------- Export / Import / Refresh ----------
+  els.btnRefresh.onclick = () => refreshAll();
+  els.btnExport.onclick = () => {
+    const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='portfolio.json'; a.click();
+    URL.revokeObjectURL(url);
+  };
+  els.btnImport.onclick = async () => {
+    const pick = document.createElement('input'); pick.type='file'; pick.accept='.json,application/json';
+    pick.onchange = async () => {
+      const file = pick.files[0]; if(!file) return;
+      try{
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if(!data.accounts || !data.assets) throw new Error('ไฟล์ไม่ถูกต้อง');
+        state = data; store.save(); boot();
+      }catch(e){ alert('อ่านไฟล์ไม่สำเร็จ: '+e.message); }
+    };
+    pick.click();
+  };
+
+  // --------- Boot ----------
+  function boot(){
+    renderAccounts(); renderAccountOptions(); renderAssets();
+    renderLog();
+    refreshAll();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
